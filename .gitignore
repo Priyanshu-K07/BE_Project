@@ -1,0 +1,13 @@
+cat <<EOL >> .gitignore
+.venv/
+.env
+__pycache__/
+*.py[cod]
+*.pyo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+EOL
+
+results
