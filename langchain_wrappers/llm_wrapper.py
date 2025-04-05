@@ -23,13 +23,11 @@ class GeminiLLM:
         self.system_instruction = system_instruction
         self.model_name = model_name
         self.temperature = temperature
-        print(f"{self.system_instruction=}, \n{self.model_name=}, \n{self.temperature=}")
         # The ChatGoogleGenerativeAI instance automatically reads GOOGLE_API_KEY from environment if not passed.
         self.llm = ChatGoogleGenerativeAI(
             model=self.model_name,
             temperature=self.temperature,
             google_api_key=api_key,
-            # You can pass additional parameters such as max_retries, top_p, etc.
         )
 
     def generate_content(self, prompt: str) -> str:

@@ -16,8 +16,6 @@ mpy_config.change_settings({
     "IMAGEMAGICK_BINARY": r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"
 })
 
-FONT_PATH = r"C:\Users\ADMIN\AppData\Local\Microsoft\Windows\Fonts"
-
 
 def create_video_from_images_and_audio(
         images: List,

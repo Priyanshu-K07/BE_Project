@@ -13,6 +13,7 @@ from langchain_wrappers.llm_wrapper import GeminiLLM
 from langchain_wrappers.prompts import NARRATOR_INSTRUCTION, PROMPTER_INSTRUCTION
 from langchain_wrappers.schema_models import Visualization, Narration
 import pandas as pd
+import io
 
 # Allow nested event loops in Streamlit
 nest_asyncio.apply()
@@ -113,12 +114,14 @@ def main():
             status_video.success("✅ Video Compilation Completed!")
             progress_bar.progress(100)
 
-            st.session_state.video_output = compiler_output
+            with open(compiler_output, "rb") as f:
+                video_bytes = f.read()
+            st.session_state.video_output = video_bytes
 
     # Final Output
     if st.session_state.video_output:
         st.subheader("🎬 Generated Video Output")
-        st.video(st.session_state.video_output)
+        st.video(io.BytesIO(st.session_state.video_output))
         st.download_button(
             label="📥 Download Video",
             data=st.session_state.video_output,

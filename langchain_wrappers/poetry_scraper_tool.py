@@ -24,7 +24,6 @@ class PoetryScraperTool(BaseTool):
         driver = webdriver.Chrome(options=chrome_options)
         try:
             query = f"{title} poetry foundation".replace(' ','+')
-            print(query)
             driver.get(f"https://www.google.com/search?q={query}")
 
             # Wait for the search input and button to appear

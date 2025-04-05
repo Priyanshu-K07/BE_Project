@@ -87,11 +87,9 @@ class PoemAnalysisChain(Chain):
 
     def _call(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         poem_text = inputs["poem_text"]
-        print(f"{poem_text=}")
 
         # Generate structured narration from the LLM
         response_text = self.llm.generate_content(poem_text)
-        print(f"{response_text=}")
 
         # Preprocess the response text:
         # 1. Remove markdown code fences if present.
@@ -156,9 +154,7 @@ class ImagePromptChain(Chain):
         replicate_tool = ReplicateImageGenerationTool()
 
         for segment in narration_segments:
-            print("Image generation")
             # Build a prompt message (here using segment details; adjust as needed)
-            # For demonstration, we're simply passing the segment's lines to generate a visualization prompt.
             msg = f"Generate visualization prompt for: {segment['lines']}"
             response_text = self.llm.generate_content(msg)
             try:
@@ -193,7 +189,6 @@ class ImagePromptChain(Chain):
         replicate_tool = ReplicateImageGenerationTool()
 
         for segment in narration_segments:
-            print("Async Image generation")
             msg = f"Generate visualization prompt for: {segment['lines']}"
             response_text = await asyncio.to_thread(self.llm.generate_content, msg)
             try:
@@ -238,7 +233,6 @@ class AudioGenerationChain(Chain):
         segments = inputs["audio_texts"]["segments"]
         audios = []
         for segment in segments:
-            print("Audio Generation")
             # Generate audio for combined lines and literal explanation
             audio_np1 = generate_audio(segment['lines'] + '...' + segment['literal_explanation'])
             audio_tensor1 = torch.tensor(audio_np1, dtype=torch.float32)
@@ -254,7 +248,6 @@ class AudioGenerationChain(Chain):
         segments = inputs["audio_texts"]["segments"]
         audios = []
         for segment in segments:
-            print("Async Audio Generation")
             audio_np1 = await asyncio.to_thread(generate_audio, segment['lines'] + '...' + segment['literal_explanation'])
             audio_tensor1 = torch.tensor(audio_np1, dtype=torch.float32)
             audios.append(audio_tensor1)
