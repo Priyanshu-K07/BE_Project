@@ -6,9 +6,9 @@ replicate
 langchain
 langchain_google_genai
 pydantic
-numpy
 scipy
-moviepy
+numpy==1.26.4
+moviepy==1.0.3
 nltk
 soundfile
 beautifulsoup4
