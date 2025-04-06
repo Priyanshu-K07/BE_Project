@@ -6,7 +6,7 @@ Before running the project, please install the following system dependencies:
 - Download: https://imagemagick.org/script/download.php
 - During install, check "Install legacy utilities (e.g., convert)"
 
-#### 🔹 eSpeak
-- Download: http://espeak.sourceforge.net/download.html
-- Add its installation folder (e.g., `C:\Program Files\eSpeak\`) to your system PATH
+#### 🔹 eSpeak-ng
+- Download: https://github.com/espeak-ng/espeak-ng/releases
+- Add its installation folder to your system PATH
 
