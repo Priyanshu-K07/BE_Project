@@ -1,45 +1,74 @@
 NARRATOR_INSTRUCTION = """
-Generate a detailed storyteller-style narration of the provided poem. For each two-line segment, cover the literal meaning first, followed by the implied intentions.
-The implied intentions should contain metaphorical representations of the literal meaning.
-Keep the narration in a natural style and ensure consistency between segments for a smooth narrative flow.
+Generate a deeply detailed, storyteller‐style narration of the provided poem. Break the poem into as many small segments as necessary—each time a new image, motif, or emotion appears, start a fresh segment. For each segment:
 
-Use this JSON schema to structure the narration. Avoid using double quotes inside strings; use single quotes instead for any internal quotations.
+1. Describe the explicit scene and action in a warm, narrative tone, as if you’re guiding a listener through a living story.
+2. Then explore the deeper, metaphorical intentions, weaving in symbolic imagery that mirrors the literal scene.
+3. Finally, supply a short list of abstract, non-literal keywords that capture the segment’s essence.
+
+Use this JSON schema for every segment. Inside your strings, use single quotes if you need to quote:
 
 Narration = {
-    "segment": str,                # The segment number in the sequence of the poem
-    "lines": str,                  # The two-line segment of the poem
-    "literal_explanation": str,     # Narration of the literal meaning, covering explicit elements and visual motifs
-    "implied_intentions": str,      # Narration of the implied meaning, revealing deeper or symbolic intentions
-    "implied_keywords": str,       # List of non-real, abstract, metaphorical representations of lines
+    "segment": str,                # A unique segment identifier (e.g. '1', '2a', '2b', etc.)
+    "lines": str,                  # The exact lines from the poem for this segment
+    "literal_explanation": str,    # Storyteller-style description of what’s happening, evoking sights, sounds, and feelings
+    "implied_intentions": str,     # Metaphorical or symbolic interpretation of the scene
+    "implied_keywords": str        # Comma-separated, abstract or symbolic terms derived from this segment
 }
 
 Return: list[Narration]
 """
 
+
 PROMPTER_INSTRUCTION = """
-Generate a structured JSON output for visualizing a two-line segment of a poem.
-Poem lines and sentiment analysis score are provided as input.
-The sentiment score should influence the colors, symbols, or overall tone used in the output.
+Generate a structured JSON output for visualizing a segment of a poem.
+Poem lines, literal explanation, implied intentions and sentiment analysis scores are provided as input.
+Use the literal explanation and implied intentions to create visualization prompts in the following format.
+The sentiment score should influence the colors, symbols, or overall tone used in each prompt.
 
-For the literal section, use vivid, concrete language to depict the primary subjects and themes explicitly mentioned in the lines. Include any relevant colors, symbols, or recurring elements to align with the sentiment.
+For each of the three literal prompts (`literal1`, `literal2`, `literal3`), use vivid, concrete language to depict the primary subjects and themes explicitly mentioned in the lines. Include any relevant colors, symbols, or recurring elements to align with the sentiment.
 
-For the implied section, create a prompt that abstractly represents the mood or theme of the lines through metaphorical and symbolic language. Use surrealist, abstract descriptions that connect emotionally or conceptually without mentioning the literal objects.
-I want the implied prompt to be in alignment with the implied intentions provided.
+For each of the three implied prompts (`implied1`, `implied2`, `implied3`), create surrealist, abstract descriptions that capture the mood or theme through metaphorical and symbolic language, without mentioning the literal objects.
 
-Use this JSON schema:
+Use this JSON schema (without wrapping it under a `Visualization` key):
 
-Visualization = {
-    'literal': {
-        'core_element': str,        # The primary subject, object, or theme explicitly mentioned in the line
-        'visual_motifs': list[str], # Colors, symbols, or recurring elements for literal representation, influenced by sentiment
-        'style': str                # The artistic style for the literal image
+{
+    "literal1": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
     },
-    'implied': {
-        'core_element': str,        # The primary subject, object, or theme implied by the line
-        'visual_motifs': list[str], # Colors, symbols, or recurring elements for implied representation, influenced by sentiment
-        'style': str                # The artistic style for the implied image (always Surrealistic abstract painting)
+    "literal2": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
+    },
+    "literal3": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
+    },
+    "implied1": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
+    },
+    "implied2": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
+    },
+    "implied3": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
     }
 }
 
-Return: Visualization
+Return only the JSON object as specified above.
 """

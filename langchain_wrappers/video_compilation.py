@@ -23,36 +23,42 @@ def create_video_from_images_and_audio(
         sample_rate: int = 22050,
         poem_lines: List[str] = None,
         poet: str = None,
-        poem_name: str = ""
+        poem_name: str = "",
+        images_per_audio: int = 3
 ) -> str:
     """
     Create a video from lists of PIL images and audio tensors with an introductory title screen.
+    Displays `images_per_audio` images for each audio clip by splitting the audio duration evenly.
     Returns the output video file path.
     """
-    if len(images) != len(audio_tensors):
-        raise ValueError("Number of images must match number of audio tensors")
+    # Validate image count
+    expected_images = len(audio_tensors) * images_per_audio
+    if len(images) != expected_images:
+        raise ValueError(
+            f"Expected {expected_images} images for {len(audio_tensors)} audio clips ("
+            f"{images_per_audio} images each), got {len(images)}"
+        )
 
-    # Create a temporary directory for audio files.
+    # Prepare temporary storage
     temp_dir = tempfile.mkdtemp()
-    final_clip = None
     video_clips = []
     audio_paths = []
     intro_audio_path = None
+
     try:
-        # Generate introductory audio for the title screen.
+        # --------------------
+        # Introductory title screen
+        # --------------------
         intro_text = f"{poem_name} by {poet}" if poet else poem_name
-        # Use your audio generation function
         intro_audio = generate_audio(intro_text)
         intro_audio_tensor = torch.tensor(intro_audio, dtype=torch.float32)
         intro_audio_path = os.path.join(temp_dir, "intro_audio.wav")
-        intro_audio_array = intro_audio_tensor.cpu().numpy()
-        intro_audio_array = (intro_audio_array * 32767).astype(np.int16)
-        wav.write(intro_audio_path, sample_rate, intro_audio_array)
+        intro_array = (intro_audio_tensor.cpu().numpy() * 32767).astype(np.int16)
+        wav.write(intro_audio_path, sample_rate, intro_array)
 
         intro_audio_clip = AudioFileClip(intro_audio_path)
         intro_duration = intro_audio_clip.duration
 
-        # Create title clip with antialiasing and higher resolution
         title_clip = TextClip(
             poem_name,
             fontsize=80,
@@ -63,7 +69,6 @@ def create_video_from_images_and_audio(
             size=(1100, None)
         ).set_position(("center", 100)).set_duration(intro_duration)
 
-        # Create poet clip with improved rendering
         poet_clip = TextClip(
             f"by {poet}" if poet else "",
             fontsize=40,
@@ -73,98 +78,94 @@ def create_video_from_images_and_audio(
             align='center'
         ).set_position(("center", 100 + title_clip.h + 20)).set_duration(intro_duration)
 
-        # Create the title screen with just the single combined clip
-        title_screen = CompositeVideoClip([
-            ImageClip(np.zeros((720, 1280, 3), dtype=np.uint8)).set_duration(intro_duration),
-            title_clip,
-            poet_clip
-        ]).set_audio(intro_audio_clip)
-
+        bg = ImageClip(np.zeros((720, 1280, 3), dtype=np.uint8)).set_duration(intro_duration)
+        title_screen = CompositeVideoClip([bg, title_clip, poet_clip]).set_audio(intro_audio_clip)
         video_clips.append(title_screen)
 
-        # Convert each audio tensor to a WAV file.
+        # --------------------
+        # Convert audio tensors to WAV
+        # --------------------
         for i, audio_tensor in enumerate(audio_tensors):
-            temp_audio_path = os.path.join(temp_dir, f"temp_audio_{i}.wav")
-            audio_array = audio_tensor.cpu().numpy()
-            audio_array = (audio_array * 32767).astype(np.int16)
-            wav.write(temp_audio_path, sample_rate, audio_array)
-            audio_paths.append(temp_audio_path)
+            path = os.path.join(temp_dir, f"audio_{i}.wav")
+            arr = (audio_tensor.cpu().numpy() * 32767).astype(np.int16)
+            wav.write(path, sample_rate, arr)
+            audio_paths.append(path)
 
-        print(f"{len(audio_paths)=}")
-        print(f"{len(images)=}")
-        print(f"Poem lines: {poem_lines}")
-        print(f"Number of images: {len(images)}")
-        print(f"Number of poem lines: {len(poem_lines) if poem_lines else 0}")
+        # --------------------
+        # Create video segments
+        # --------------------
 
-        # Create a video clip for each image and corresponding audio.
-        for idx, (img, audio_path) in enumerate(zip(images, audio_paths)):
-            # Ensure the image is in RGB mode and resize to standard dimensions if needed
-            img = img.convert("RGB")
-            # Resize image to a standard size that works well with video (e.g., 1280x720)
-            img = img.resize((1280, 720), Image.Resampling.LANCZOS)
-            img_array = np.array(img)
+        render_text = True
+        poem_line_idx = 0
 
-            # Verify the image array has proper shape and values
-            if img_array.ndim != 3 or img_array.shape[2] != 3:
-                print(f"Warning: Image at index {idx} has unexpected shape: {img_array.shape}")
-                # Create a blank image instead of failing
-                img_array = np.zeros((720, 1280, 3), dtype=np.uint8)
-
+        for idx, audio_path in enumerate(audio_paths):
             audio_clip = AudioFileClip(audio_path)
-            audio_duration = audio_clip.duration
-            image_clip = ImageClip(img_array).set_duration(audio_duration).set_fps(24)
+            duration = audio_clip.duration
+            sub_duration = duration / images_per_audio
 
-            if poem_lines and idx % 2 == 0 and idx // 2 < len(poem_lines):
-                max_width = int(img_array.shape[1] * 0.9)
-                text_line = poem_lines[idx // 2].upper()
-                text_clip = TextClip(
-                    text_line,
-                    fontsize=60,
-                    color='white',
-                    font='Cambria-Bold',
-                    method="label",
-                    size=(max_width, None),
-                ).set_position('center').set_duration(audio_duration / 2)
-                image_clip = CompositeVideoClip([image_clip, text_clip])
+            start = idx * images_per_audio
+            batch = images[start:start + images_per_audio]
+            subclips = []
 
-            video_clip = image_clip.set_audio(audio_clip)
-            video_clips.append(video_clip)
+            for j, img in enumerate(batch):
+                img = img.convert("RGB").resize((1280, 720), Image.Resampling.LANCZOS)
+                arr = np.array(img)
+                clip = ImageClip(arr).set_duration(sub_duration).set_fps(24)
 
-        # Determine the directory of the current file
-        base_dir = os.path.dirname(os.path.abspath(__file__))
+                # only on the first frame of the batch, when flag is True,
+                # and we still have lines left
+                if (
+                        poem_lines
+                        and render_text
+                        and j == 0
+                        and poem_line_idx < len(poem_lines)
+                ):
+                    text = poem_lines[poem_line_idx].upper()
+                    poem_line_idx += 1  # consume exactly one line here
 
-        # Create results directory in the same directory as the current file
-        parent_dir = os.path.dirname(base_dir)
-        parent_results_dir = os.path.join(parent_dir, "results")
-        os.makedirs(parent_results_dir, exist_ok=True)
+                    max_w = int(arr.shape[1] * 0.9)
+                    txt_clip = TextClip(
+                        text,
+                        fontsize=60,
+                        color='white',
+                        font='Cambria-Bold',
+                        method="label",
+                        size=(max_w, None)
+                    ).set_position('center').set_duration(sub_duration)
+                    clip = CompositeVideoClip([clip, txt_clip])
 
-        # Generate a random text component
-        random_text = uuid.uuid4().hex[:8]  # Use 8 characters from a UUID
+                subclips.append(clip)
 
-        # Create filename using poem_name and random text
-        safe_poem_name = "".join(c for c in poem_name if c.isalnum() or c in [' ', '_', '-']).strip().replace(' ', '_')
-        if not safe_poem_name:  # If poem_name is empty or contains only special characters
-            safe_poem_name = "poem"
+            # flip for next batch
+            render_text = not render_text
 
-        output_filename = f"{safe_poem_name}_{random_text}.mp4"
-        output_file = os.path.abspath(os.path.join(parent_results_dir, output_filename))
+            segment_clip = concatenate_videoclips(subclips).set_audio(audio_clip)
+            video_clips.append(segment_clip)
 
-        # Write the video file
-        final_clip = concatenate_videoclips(video_clips)
-        final_clip.write_videofile(output_file, fps=24, codec='libx264', audio_codec='aac')
+        # --------------------
+        # Output file setup
+        # --------------------
+        base = os.path.dirname(os.path.abspath(__file__))
+        results = os.path.join(os.path.dirname(base), "results")
+        os.makedirs(results, exist_ok=True)
 
-        # Return the path to the created file
-        return output_file
+        rand = uuid.uuid4().hex[:8]
+        safe_name = "".join(c for c in poem_name if c.isalnum() or c in [' ', '_', '-']).strip().replace(' ', '_') or "poem"
+        out_name = f"{safe_name}_{rand}.mp4"
+        out_path = os.path.join(results, out_name)
+
+        final = concatenate_videoclips(video_clips)
+        final.write_videofile(out_path, fps=24, codec='libx264', audio_codec='aac')
+
+        return out_path
 
     finally:
-        # Clean up resources
-        if final_clip:
-            final_clip.close()
+        # Cleanup
         for clip in video_clips:
             clip.close()
-        for audio_path in audio_paths:
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
         if intro_audio_path and os.path.exists(intro_audio_path):
             os.remove(intro_audio_path)
+        for p in audio_paths:
+            if os.path.exists(p):
+                os.remove(p)
         os.rmdir(temp_dir)

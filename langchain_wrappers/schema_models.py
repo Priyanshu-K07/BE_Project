@@ -21,5 +21,10 @@ class VisualizationSection(BaseModel):
 
 
 class Visualization(BaseModel):
-    literal: VisualizationSection = Field(..., description="Literal visualization details")
-    implied: VisualizationSection = Field(..., description="Implied visualization details")
+    literal1: VisualizationSection = Field(..., description="First literal visualization details")
+    literal2: VisualizationSection = Field(..., description="Second literal visualization details")
+    literal3: VisualizationSection = Field(..., description="Second literal visualization details")
+    implied1: VisualizationSection = Field(..., description="First implied visualization details")
+    implied2: VisualizationSection = Field(..., description="Second implied visualization details")
+    implied3: VisualizationSection = Field(..., description="Second implied visualization details")
+

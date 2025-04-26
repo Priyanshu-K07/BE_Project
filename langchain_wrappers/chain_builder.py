@@ -129,15 +129,14 @@ class PoemAnalysisChain(Chain):
 class ImagePromptChain(Chain):
     """
     For each narration segment:
-      1. Uses the Gemini LLM (with an output parser) to generate visualization prompts.
-         The parsed output is expected to be a dictionary with keys "literal" and "implied".
-      2. For each section, it formats the prompt into a text string.
-      3. It calls the imported ReplicateImageGenerationTool to generate an image URL.
-      4. It converts the image URL into a PIL Image.
-      5. Returns a list (one entry per segment) with keys "literal" and "implied" containing the images.
+      1. Sends the entire segment dictionary to the Gemini LLM (with an output parser) to generate four visualization prompts: 'literal1', 'literal2', 'implied1', 'implied2'.
+      2. Formats each prompt dict via `format_prompt` into a text string.
+      3. Uses ReplicateImageGenerationTool to generate an image URL for each prompt.
+      4. Converts each URL into a PIL Image.
+      5. Returns a list of image-mapping dicts, one per segment, with keys 'literal1', 'literal2', 'implied1', 'implied2'.
     """
-    llm: GeminiLLM  # Your GeminiLLM instance
-    output_parser: PydanticOutputParser  # Your PydanticOutputParser instance configured with the Visualization schema
+    llm: GeminiLLM
+    output_parser: PydanticOutputParser
 
     @property
     def input_keys(self) -> List[str]:
@@ -149,68 +148,68 @@ class ImagePromptChain(Chain):
 
     def _call(self, inputs: Dict[str, Any], run_manager=None) -> Dict[str, Any]:
         narration_segments = inputs["narration_segments"]
-        images = []
-        # Instantiate the Replicate tool (imported from your module)
+        images: List[Dict[str, Any]] = []
         replicate_tool = ReplicateImageGenerationTool()
 
         for segment in narration_segments:
-            # Build a prompt message (here using segment details; adjust as needed)
-            msg = f"Generate visualization prompt for: {segment['lines']}"
+            # Pass the full segment to the visualization model
+            msg = f"Generate visualization prompts for segment: {json.dumps(segment)}"
             response_text = self.llm.generate_content(msg)
             try:
-                parsed_prompt = self.output_parser.parse(response_text)
+                parsed = self.output_parser.parse(response_text)
             except Exception as e:
-                raise ValueError(f"Failed to parse image prompt: {e}")
-            # Expecting the parsed prompt to be a dict with keys 'literal' and 'implied'
-            prompt_dict = parsed_prompt.dict()
-            literal_prompt_str = format_prompt(prompt_dict.get("literal", {}))
-            implied_prompt_str = format_prompt(prompt_dict.get("implied", {}))
+                raise ValueError(f"Failed to parse image prompts: {e}")
+            prompt_dict = parsed.dict()
 
-            # Call the replicate tool to generate image URLs.
-            literal_image_url = replicate_tool.run(literal_prompt_str)
-            implied_image_url = replicate_tool.run(implied_prompt_str)
+            # Extract and format each of the four prompts
+            prompts = {}
+            for key in ("literal1", "literal2", "literal3", "implied1", "implied2", "implied3"):
+                section = prompt_dict.get(key, {})
+                prompts[key] = format_prompt(section)
 
-            # Convert image URLs to PIL Images.
-            literal_image = url_to_pil(literal_image_url)
-            implied_image = url_to_pil(implied_image_url)
+            print("-----------------------------------------------")
+            print(f"{prompts=}")
 
-            # images.append({
-            #     "literal": literal_image,
-            #     "implied": implied_image
-            # })
-            images.append(literal_image)
-            images.append(implied_image)
+            # Generate images for each prompt
+            segment_images: Dict[str, Any] = {}
+            for key, prompt_str in prompts.items():
+                url = replicate_tool.run(prompt_str)
+                segment_images[key] = url_to_pil(url)
 
+            for image in segment_images.values():
+                images.append(image)
+            print(f"{len(images)=}")
         return {"images": images}
 
     async def _arun(self, inputs: Dict[str, Any], run_manager=None) -> Dict[str, Any]:
         narration_segments = inputs["narration_segments"]
-        images = []
+        images: List[Dict[str, Any]] = []
         replicate_tool = ReplicateImageGenerationTool()
 
         for segment in narration_segments:
-            msg = f"Generate visualization prompt for: {segment['lines']}"
+            msg = f"Generate visualization prompts for segment: {json.dumps(segment)}"
             response_text = await asyncio.to_thread(self.llm.generate_content, msg)
             try:
-                parsed_prompt = self.output_parser.parse(response_text)
+                parsed = self.output_parser.parse(response_text)
             except Exception as e:
-                raise ValueError(f"Failed to parse image prompt: {e}")
-            prompt_dict = parsed_prompt.dict()
-            literal_prompt_str = format_prompt(prompt_dict.get("literal", {}))
-            implied_prompt_str = format_prompt(prompt_dict.get("implied", {}))
+                raise ValueError(f"Failed to parse image prompts: {e}")
+            prompt_dict = parsed.dict()
 
-            literal_image_url = await asyncio.to_thread(replicate_tool.run, literal_prompt_str)
-            implied_image_url = await asyncio.to_thread(replicate_tool.run, implied_prompt_str)
+            # Extract and format each of the four prompts
+            prompts = {}
+            for key in ("literal1", "literal2", "literal3", "implied1", "implied2", "implied3"):
+                section = prompt_dict.get(key, {})
+                prompts[key] = format_prompt(section)
 
-            literal_image = await asyncio.to_thread(url_to_pil, literal_image_url)
-            implied_image = await asyncio.to_thread(url_to_pil, implied_image_url)
+            # Generate images for each prompt
+            segment_images: Dict[str, Any] = {}
+            for key, prompt_str in prompts.items():
+                url = await asyncio.to_thread(replicate_tool.run, prompt_str)
+                image = await asyncio.to_thread(url_to_pil, url)
+                segment_images[key] = image
 
-            # images.append({
-            #     "literal": literal_image,
-            #     "implied": implied_image
-            # })
-            images.append(literal_image)
-            images.append(implied_image)
+            images.append(segment_images)
+
         return {"images": images}
 
 
@@ -279,7 +278,7 @@ class VideoCompilationChain(Chain):
             audio_tensors=inputs["audios"],
             poet=inputs.get("poet", ""),
             poem_name=inputs.get("poem_name", ""),
-            poem_lines=inputs.get("poem_lines", None)
+            poem_lines=inputs.get("poem_lines", None),
         )
         return {"video_path": video_path}
 

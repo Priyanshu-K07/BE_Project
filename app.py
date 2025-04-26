@@ -109,6 +109,8 @@ def main():
                         "images": results["image_prompts"],
                         "audios": results["audios"]
                     }
+                    print(f"{final['poem_lines']}")
+                    print(f"{len(final['images'])=} \n{len(final['audios'])}")
                     video_compiler = VideoCompilationChain()
                     compiler_output = video_compiler.run(final)
             status_video.success("✅ Video Compilation Completed!")
