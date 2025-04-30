@@ -20,17 +20,33 @@ Return: list[Narration]
 
 
 PROMPTER_INSTRUCTION = """
-Generate a structured JSON output for visualizing a segment of a poem.
-Poem lines, literal explanation, implied intentions and sentiment analysis scores are provided as input.
-Use the literal explanation and implied intentions to create visualization prompts in the following format.
-The sentiment score should influence the colors, symbols, or overall tone used in each prompt.
+Generate a structured JSON output for visualizing a segment of a poem. Poem lines, literal explanation, implied intentions and sentiment analysis scores are provided as input. Use these elements to create 8 visualization prompts in the following format:
 
-For each of the three literal prompts (`literal1`, `literal2`, `literal3`), use vivid, concrete language to depict the primary subjects and themes explicitly mentioned in the lines. Include any relevant colors, symbols, or recurring elements to align with the sentiment.
+- 4 literal prompts that faithfully represent the explicit content in the poem
+- 4 implied prompts that capture the abstract emotions and subtextual meanings
 
-For each of the three implied prompts (`implied1`, `implied2`, `implied3`), create surrealist, abstract descriptions that capture the mood or theme through metaphorical and symbolic language, without mentioning the literal objects.
+The sentiment score (-1.0 to 1.0) should influence your color palette and atmosphere:
+- Negative scores (-1.0 to -0.3): Use darker, muted colors (deep blues, grays, browns), somber lighting, and heavier visual elements
+- Neutral scores (-0.3 to 0.3): Use balanced color schemes, natural lighting, and neutral visual weight
+- Positive scores (0.3 to 1.0): Use vibrant, warm colors (yellows, oranges, bright blues), uplifting imagery, and lighter visual elements
 
-Use this JSON schema (without wrapping it under a `Visualization` key):
+For each prompt, provide:
+1. A core_element (the central subject/focus)
+2. Visual_motifs (3-5 supporting elements that enhance the scene)
+3. Style (artistic style that best suits the content - e.g., impressionist, surrealist, photorealistic)
+4. A detailed prompt (75-125 words) that combines all elements into a cohesive visual description
 
+For LITERAL prompts:
+- Extract concrete nouns, actions, and settings directly from the poem lines
+- Maintain the original imagery while enhancing it with sensory details
+- Honor the poem's explicit metaphors and similes
+
+For IMPLIED prompts:
+- Transform the poem's subtext into abstract, symbolic imagery
+- Use visual metaphors that convey the emotional undercurrents
+- Create surrealist or expressionist scenes that capture the mood without directly referencing the literal objects
+
+Return only a JSON object with this structure:
 {
     "literal1": {
         "core_element": str,
@@ -45,6 +61,12 @@ Use this JSON schema (without wrapping it under a `Visualization` key):
         "prompt": str
     },
     "literal3": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
+    },
+    "literal4": {
         "core_element": str,
         "visual_motifs": list[str],
         "style": str,
@@ -67,8 +89,12 @@ Use this JSON schema (without wrapping it under a `Visualization` key):
         "visual_motifs": list[str],
         "style": str,
         "prompt": str
+    },
+    "implied4": {
+        "core_element": str,
+        "visual_motifs": list[str],
+        "style": str,
+        "prompt": str
     }
 }
-
-Return only the JSON object as specified above.
 """

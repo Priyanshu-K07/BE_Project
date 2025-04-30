@@ -154,6 +154,7 @@ class ImagePromptChain(Chain):
         for segment in narration_segments:
             # Pass the full segment to the visualization model
             msg = f"Generate visualization prompts for segment: {json.dumps(segment)}"
+            print(f"{msg=}")
             response_text = self.llm.generate_content(msg)
             try:
                 parsed = self.output_parser.parse(response_text)
@@ -163,7 +164,7 @@ class ImagePromptChain(Chain):
 
             # Extract and format each of the four prompts
             prompts = {}
-            for key in ("literal1", "literal2", "literal3", "implied1", "implied2", "implied3"):
+            for key in ("literal1", "literal2", "literal3", "literal4", "implied1", "implied2", "implied3", "implied4"):
                 section = prompt_dict.get(key, {})
                 prompts[key] = format_prompt(section)
 
@@ -197,7 +198,7 @@ class ImagePromptChain(Chain):
 
             # Extract and format each of the four prompts
             prompts = {}
-            for key in ("literal1", "literal2", "literal3", "implied1", "implied2", "implied3"):
+            for key in ("literal1", "literal2", "literal3", "literal4", "implied1", "implied2", "implied3", "implied4"):
                 section = prompt_dict.get(key, {})
                 prompts[key] = format_prompt(section)
 

@@ -24,7 +24,9 @@ class Visualization(BaseModel):
     literal1: VisualizationSection = Field(..., description="First literal visualization details")
     literal2: VisualizationSection = Field(..., description="Second literal visualization details")
     literal3: VisualizationSection = Field(..., description="Second literal visualization details")
+    literal4: VisualizationSection = Field(..., description="Second literal visualization details")
     implied1: VisualizationSection = Field(..., description="First implied visualization details")
     implied2: VisualizationSection = Field(..., description="Second implied visualization details")
     implied3: VisualizationSection = Field(..., description="Second implied visualization details")
+    implied4: VisualizationSection = Field(..., description="Second implied visualization details")
 
